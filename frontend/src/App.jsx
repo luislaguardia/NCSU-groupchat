@@ -92,7 +92,7 @@ function App() {
 
   const AuthCard = ({ title, children }) => (
     <div className={`min-h-screen ${themeClass} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center px-4`}>
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-sm">
+      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl w-full max-w-sm">
         <h2 className="text-2xl font-semibold text-center mb-4">{title}</h2>
         {children}
       </div>
@@ -122,18 +122,18 @@ function App() {
     <div className={`${themeClass} min-h-screen bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex flex-col items-center justify-center p-4`}>
       <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl flex flex-col h-[90vh]">
         <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">Messenger-style Group Chat</h2>
+          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">💬 Group Chat</h2>
           <button onClick={toggleDarkMode} className="text-sm text-blue-500 dark:text-blue-300 hover:underline">
             {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-800">
           {messages.map((msg, idx) => {
             const isMine = msg.nickname === nickname;
             return (
               <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs px-4 py-2 rounded-2xl ${isMine ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-none'}`}>
+                <div className={`max-w-sm px-4 py-2 rounded-2xl shadow-md ${isMine ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-sm'}`}>
                   <div className="text-sm font-semibold mb-1">{msg.nickname}</div>
                   <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
                   <div className="text-[10px] text-right mt-1 opacity-70">{formatTime(msg.createdAt)}</div>
@@ -147,9 +147,9 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2">
+        <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2 bg-white dark:bg-gray-900">
           <input
-            className="flex-grow border rounded p-2 text-sm bg-gray-200 dark:bg-gray-800 text-black dark:text-white"
+            className="flex-grow border rounded-xl p-2 text-sm bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
             placeholder="Type a message..."
             value={message}
             onChange={e => setMessage(e.target.value)}
@@ -158,7 +158,7 @@ function App() {
               if (e.key === 'Enter') sendMessage();
             }}
           />
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded" onClick={sendMessage}>
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl" onClick={sendMessage}>
             Send
           </button>
         </div>
