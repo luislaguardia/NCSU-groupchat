@@ -20,40 +20,33 @@ const PORT = process.env.PORT || 5008;
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Models
+// Models
 const User = require('./models/User');
 const Message = require('./models/Message');
 
-// MongoDB Connection
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.log('❌ MongoDB connection error:', err));
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Routes
-
-// Login endpoint
+// Login
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const user = await User.findOne({ username, password });
-
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
+    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     res.json({ id: user._id, nickname: user.nickname });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Set nickname after login
+// Set nickname
 app.post('/set-nickname', async (req, res) => {
   const { id, nickname } = req.body;
-
   try {
     await User.findByIdAndUpdate(id, { nickname });
     res.json({ message: 'Nickname updated' });
@@ -62,7 +55,7 @@ app.post('/set-nickname', async (req, res) => {
   }
 });
 
-// Get all messages
+// Fetch messages
 app.get('/messages', async (req, res) => {
   try {
     const messages = await Message.find().sort({ createdAt: 1 });
@@ -72,7 +65,7 @@ app.get('/messages', async (req, res) => {
   }
 });
 
-// Socket.IO handling
+// Socket.IO events
 io.on('connection', (socket) => {
   console.log('🟢 A user connected');
 
@@ -80,10 +73,14 @@ io.on('connection', (socket) => {
     try {
       const newMessage = new Message({ userId, nickname, message });
       await newMessage.save();
-      io.emit('receiveMessage', newMessage); // broadcast to all
+      io.emit('receiveMessage', newMessage);
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error('❌ Failed to send message:', err);
     }
+  });
+
+  socket.on('typing', (data) => {
+    socket.broadcast.emit('userTyping', data); // Notify others
   });
 
   socket.on('disconnect', () => {
