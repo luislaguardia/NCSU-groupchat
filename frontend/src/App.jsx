@@ -17,6 +17,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // Fetch messages once on mount
   useEffect(() => {
     fetchMessages();
 
@@ -42,21 +43,31 @@ function App() {
   }, [messages]);
 
   const fetchMessages = async () => {
-    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/messages`);
-    setMessages(res.data);
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/messages`);
+      setMessages(res.data);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    }
   };
 
   const handleLogin = async () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, {
         username,
-        password
+        password,
       });
+
+      if (!res.data || !res.data.id) {
+        alert('Login failed');
+        return;
+      }
+
       setUserId(res.data.id);
+      setNickname(res.data.nickname || '');
+
       if (!res.data.nickname) {
         setShowNicknamePrompt(true);
-      } else {
-        setNickname(res.data.nickname);
       }
     } catch (err) {
       alert('Login failed');
@@ -64,12 +75,17 @@ function App() {
   };
 
   const updateNickname = async () => {
-    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/set-nickname`, {
-      id: userId,
-      nickname: nicknameInput
-    });
-    setNickname(nicknameInput);
-    setShowNicknamePrompt(false);
+    try {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/set-nickname`, {
+        id: userId,
+        nickname: nicknameInput,
+      });
+
+      setNickname(nicknameInput);
+      setShowNicknamePrompt(false);
+    } catch (err) {
+      alert('Failed to set nickname');
+    }
   };
 
   const sendMessage = () => {
@@ -99,31 +115,63 @@ function App() {
     </div>
   );
 
-  if (!userId) {
+  // Login screen
+  if (!userId && !showNicknamePrompt) {
     return (
       <AuthCard title="Login">
-        <input className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-        <input className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-        <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded" onClick={handleLogin}>Login</button>
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+          onClick={handleLogin}
+        >
+          Login
+        </button>
       </AuthCard>
     );
   }
 
+  // Nickname prompt
   if (showNicknamePrompt) {
     return (
       <AuthCard title="Set Your Nickname">
-        <input className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Nickname" value={nicknameInput} onChange={e => setNicknameInput(e.target.value)} />
-        <button className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded" onClick={updateNickname}>Set Nickname</button>
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Nickname"
+          value={nicknameInput}
+          onChange={(e) => setNicknameInput(e.target.value)}
+        />
+        <button
+          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded"
+          onClick={updateNickname}
+        >
+          Set Nickname
+        </button>
       </AuthCard>
     );
   }
 
+  // Main chat UI
   return (
     <div className={`${themeClass} min-h-screen bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex flex-col items-center justify-center p-4`}>
       <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl flex flex-col h-[90vh]">
         <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">💬 Group Chat</h2>
-          <button onClick={toggleDarkMode} className="text-sm text-blue-500 dark:text-blue-300 hover:underline">
+          <button
+            onClick={toggleDarkMode}
+            className="text-sm text-blue-500 dark:text-blue-300 hover:underline"
+          >
             {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
         </div>
@@ -152,13 +200,16 @@ function App() {
             className="flex-grow border rounded-xl p-2 text-sm bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
             placeholder="Type a message..."
             value={message}
-            onChange={e => setMessage(e.target.value)}
+            onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
               handleTyping();
               if (e.key === 'Enter') sendMessage();
             }}
           />
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl" onClick={sendMessage}>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl"
+            onClick={sendMessage}
+          >
             Send
           </button>
         </div>
