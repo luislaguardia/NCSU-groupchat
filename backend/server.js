@@ -65,9 +65,18 @@ app.get('/messages', async (req, res) => {
   }
 });
 
+// Online users tracking
+const onlineUsers = new Set();
+
 // Socket.IO events
 io.on('connection', (socket) => {
   console.log('🟢 A user connected');
+
+  socket.on('userConnected', (nickname) => {
+    socket.nickname = nickname;
+    onlineUsers.add(nickname);
+    io.emit('updateOnlineUsers', Array.from(onlineUsers));
+  });
 
   socket.on('sendMessage', async ({ userId, nickname, message }) => {
     try {
@@ -80,11 +89,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('typing', (data) => {
-    socket.broadcast.emit('userTyping', data); // Notify others
+    socket.broadcast.emit('userTyping', data);
   });
 
   socket.on('disconnect', () => {
     console.log('🔴 A user disconnected');
+    if (socket.nickname) {
+      onlineUsers.delete(socket.nickname);
+      io.emit('updateOnlineUsers', Array.from(onlineUsers));
+    }
   });
 });
 
