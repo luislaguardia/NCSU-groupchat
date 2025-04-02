@@ -1,3 +1,128 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #1e1e2f;
+  color: #fff;
+}
+
+/* Auth Pages */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+.auth-card {
+  background: #2c2c3e;
+  padding: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+}
+.auth-card h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.auth-card input {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 5px;
+}
+.auth-card button {
+  width: 100%;
+  background: #3a5eff;
+  color: white;
+  border: none;
+  padding: 0.7rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Main Layout */
+.chat-wrapper {
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: 250px;
+  background: #25253a;
+  padding: 1rem;
+  border-right: 1px solid #444;
+}
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e2f;
+}
+.chat-header {
+  padding: 1rem;
+  background: #29293d;
+  border-bottom: 1px solid #444;
+  font-weight: bold;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.message-row {
+  display: flex;
+}
+.message-row.mine {
+  justify-content: flex-end;
+}
+.message-row.theirs {
+  justify-content: flex-start;
+}
+.message-bubble {
+  background: #3f3f55;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  max-width: 60%;
+}
+.message-row.mine .message-bubble {
+  background: #3a5eff;
+}
+.message-nickname {
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+.message-time {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  text-align: right;
+  margin-top: 4px;
+}
+.typing-status {
+  font-style: italic;
+  font-size: 0.85rem;
+  color: #bbb;
+}
+.chat-input {
+  display: flex;
+  padding: 1rem;
+  border-top: 1px solid #444;
+}
+.chat-input input {
+  flex: 1;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: none;
+  margin-right: 0.5rem;
+}
+.chat-input button {
+  padding: 0.7rem 1.2rem;
+  border-radius: 10px;
+  background: #3a5eff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
