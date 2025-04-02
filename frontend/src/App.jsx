@@ -16,6 +16,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [typingStatus, setTypingStatus] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -32,9 +33,14 @@ function App() {
       }
     });
 
+    socket.on('updateOnlineUsers', (users) => {
+      setOnlineUsers(users);
+    });
+
     return () => {
       socket.off('receiveMessage');
       socket.off('userTyping');
+      socket.off('updateOnlineUsers');
     };
   }, [step, nickname]);
 
@@ -66,6 +72,7 @@ function App() {
       setUserId(res.data.id);
       setNickname(res.data.nickname || '');
       setStep(res.data.nickname ? 'chat' : 'nickname');
+      socket.emit('userConnected', res.data.nickname || username);
     } catch (err) {
       alert('Login failed');
     }
@@ -80,6 +87,7 @@ function App() {
 
       setNickname(nicknameInput);
       setStep('chat');
+      socket.emit('userConnected', nicknameInput);
     } catch (err) {
       alert('Failed to set nickname');
     }
@@ -130,17 +138,25 @@ function App() {
   return (
     <>
       <button className="hamburger-fixed" onClick={toggleSidebar}>☰</button>
-
       <div className="chat-wrapper">
         <aside className={`sidebar ${showSidebar ? 'visible' : ''}`}>
           <h2>Chats</h2>
           <p>Welcome, <strong>{nickname}</strong></p>
+          <hr />
+          <div className="online-users">
+            <h3>Online</h3>
+            <ul>
+              {onlineUsers.map((name, idx) => (
+                <li key={idx} className="online-indicator">
+                  <span className="dot" /> {name}
+                </li>
+              ))}
+            </ul>
+          </div>
         </aside>
 
         <main className="chat-panel">
-          <header className="chat-header">
-            Group Chat
-          </header>
+          <header className="chat-header">Group Chat</header>
 
           <div className="chat-messages">
             {messages.map((msg, idx) => {
