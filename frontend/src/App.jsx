@@ -5,19 +5,17 @@ import axios from 'axios';
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 function App() {
+  const [step, setStep] = useState('login');
   const [userId, setUserId] = useState(null);
   const [nickname, setNickname] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [nicknameInput, setNicknameInput] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [nicknameInput, setNicknameInput] = useState('');
-  const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
   const [typingStatus, setTypingStatus] = useState('');
-  const [darkMode, setDarkMode] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // Fetch messages once on mount
   useEffect(() => {
     fetchMessages();
 
@@ -47,7 +45,7 @@ function App() {
       const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/messages`);
       setMessages(res.data);
     } catch (err) {
-      console.error('Failed to fetch messages:', err);
+      console.error('Fetch messages failed:', err);
     }
   };
 
@@ -55,19 +53,16 @@ function App() {
     try {
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, {
         username,
-        password,
+        password
       });
-
-      if (!res.data || !res.data.id) {
-        alert('Login failed');
-        return;
-      }
-
-      setUserId(res.data.id);
-      setNickname(res.data.nickname || '');
-
-      if (!res.data.nickname) {
-        setShowNicknamePrompt(true);
+      if (res.data && res.data.id) {
+        setUserId(res.data.id);
+        if (!res.data.nickname) {
+          setStep('nickname');
+        } else {
+          setNickname(res.data.nickname);
+          setStep('chat');
+        }
       }
     } catch (err) {
       alert('Login failed');
@@ -78,11 +73,10 @@ function App() {
     try {
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/set-nickname`, {
         id: userId,
-        nickname: nicknameInput,
+        nickname: nicknameInput
       });
-
       setNickname(nicknameInput);
-      setShowNicknamePrompt(false);
+      setStep('chat');
     } catch (err) {
       alert('Failed to set nickname');
     }
@@ -103,115 +97,86 @@ function App() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const themeClass = darkMode ? 'dark' : '';
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  const AuthCard = ({ title, children }) => (
-    <div className={`min-h-screen ${themeClass} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center px-4`}>
-      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-semibold text-center mb-4">{title}</h2>
-        {children}
+  if (step === 'login') {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
+        <div className="bg-gray-800 p-6 rounded-xl w-80">
+          <h2 className="text-xl font-bold mb-4 text-center">Login</h2>
+          <input className="w-full p-2 mb-3 bg-gray-700 text-white rounded" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
+          <input className="w-full p-2 mb-3 bg-gray-700 text-white rounded" placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+          <button className="w-full bg-blue-500 hover:bg-blue-600 p-2 rounded" onClick={handleLogin}>Login</button>
+        </div>
       </div>
-    </div>
-  );
-
-  // Login screen
-  if (!userId && !showNicknamePrompt) {
-    return (
-      <AuthCard title="Login">
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
-          onClick={handleLogin}
-        >
-          Login
-        </button>
-      </AuthCard>
     );
   }
 
-  // Nickname prompt
-  if (showNicknamePrompt) {
+  if (step === 'nickname') {
     return (
-      <AuthCard title="Set Your Nickname">
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Nickname"
-          value={nicknameInput}
-          onChange={(e) => setNicknameInput(e.target.value)}
-        />
-        <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded"
-          onClick={updateNickname}
-        >
-          Set Nickname
-        </button>
-      </AuthCard>
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
+        <div className="bg-gray-800 p-6 rounded-xl w-80">
+          <h2 className="text-xl font-bold mb-4 text-center">Set Nickname</h2>
+          <input className="w-full p-2 mb-3 bg-gray-700 text-white rounded" placeholder="Nickname" value={nicknameInput} onChange={e => setNicknameInput(e.target.value)} />
+          <button className="w-full bg-green-500 hover:bg-green-600 p-2 rounded" onClick={updateNickname}>Save</button>
+        </div>
+      </div>
     );
   }
 
-  // Main chat UI
   return (
-    <div className={`${themeClass} min-h-screen bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex flex-col items-center justify-center p-4`}>
-      <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl flex flex-col h-[90vh]">
-        <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">💬 Group Chat</h2>
-          <button
-            onClick={toggleDarkMode}
-            className="text-sm text-blue-500 dark:text-blue-300 hover:underline"
-          >
-            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-          </button>
+    <div className="h-screen flex text-white bg-gray-900">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-800 border-r border-gray-700 p-4 flex flex-col">
+        <h2 className="text-2xl font-bold mb-4">Chats</h2>
+        <input className="mb-4 p-2 bg-gray-700 rounded text-sm" placeholder="Search..." />
+        <div className="space-y-3 overflow-y-auto">
+          {[1,2,3,4].map((user) => (
+            <div key={user} className="p-3 rounded-lg bg-gray-700 hover:bg-gray-600 cursor-pointer">
+              <p className="text-sm font-semibold">User {user}</p>
+              <p className="text-xs text-gray-300">Active</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="border-b border-gray-700 p-4 flex justify-between items-center bg-gray-800">
+          <h3 className="font-bold">{nickname}</h3>
+          <span className="text-xs text-green-400">Online</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-800">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg, idx) => {
             const isMine = msg.nickname === nickname;
             return (
               <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-sm px-4 py-2 rounded-2xl shadow-md ${isMine ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-sm'}`}>
-                  <div className="text-sm font-semibold mb-1">{msg.nickname}</div>
-                  <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
-                  <div className="text-[10px] text-right mt-1 opacity-70">{formatTime(msg.createdAt)}</div>
+                <div className={`max-w-md px-4 py-2 rounded-xl ${isMine ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                  <p className="text-sm font-semibold">{msg.nickname}</p>
+                  <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                  <p className="text-xs text-right text-gray-300 mt-1">{formatTime(msg.createdAt)}</p>
                 </div>
               </div>
             );
           })}
-          {typingStatus && (
-            <div className="text-xs text-gray-500 dark:text-gray-300 italic">{typingStatus}</div>
-          )}
+          {typingStatus && <div className="text-xs italic text-gray-400">{typingStatus}</div>}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2 bg-white dark:bg-gray-900">
+        {/* Input */}
+        <div className="border-t border-gray-700 p-4 bg-gray-800 flex gap-2">
           <input
-            className="flex-grow border rounded-xl p-2 text-sm bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
+            className="flex-grow bg-gray-700 p-2 rounded text-white text-sm"
             placeholder="Type a message..."
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setMessage(e.target.value)}
+            onKeyDown={e => {
               handleTyping();
               if (e.key === 'Enter') sendMessage();
             }}
           />
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl"
-            onClick={sendMessage}
-          >
-            Send
-          </button>
+          <button className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded" onClick={sendMessage}>Send</button>
         </div>
       </div>
     </div>
