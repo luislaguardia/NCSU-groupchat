@@ -128,49 +128,52 @@ function App() {
   }
 
   return (
-    <div className="chat-wrapper">
-      <aside className={`sidebar ${showSidebar ? 'visible' : ''}`}>
-        <h2>Chats</h2>
-        <p>Welcome, <strong>{nickname}</strong></p>
-      </aside>
+    <>
+      <button className="hamburger-fixed" onClick={toggleSidebar}>☰</button>
 
-      <main className="chat-panel">
-        <header className="chat-header">
-          <button className="hamburger" onClick={toggleSidebar}>☰</button>
-          Group Chat
-        </header>
+      <div className="chat-wrapper">
+        <aside className={`sidebar ${showSidebar ? 'visible' : ''}`}>
+          <h2>Chats</h2>
+          <p>Welcome, <strong>{nickname}</strong></p>
+        </aside>
 
-        <div className="chat-messages">
-          {messages.map((msg, idx) => {
-            const isMine = msg.nickname === nickname;
-            return (
-              <div key={idx} className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
-                <div className="message-bubble">
-                  <div className="message-nickname">{msg.nickname}</div>
-                  <div className="message-text">{msg.message}</div>
-                  <div className="message-time">{formatTime(msg.createdAt)}</div>
+        <main className="chat-panel">
+          <header className="chat-header">
+            Group Chat
+          </header>
+
+          <div className="chat-messages">
+            {messages.map((msg, idx) => {
+              const isMine = msg.nickname === nickname;
+              return (
+                <div key={idx} className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
+                  <div className="message-bubble">
+                    <div className="message-nickname">{msg.nickname}</div>
+                    <div className="message-text">{msg.message}</div>
+                    <div className="message-time">{formatTime(msg.createdAt)}</div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-          {typingStatus && <div className="typing-status">{typingStatus}</div>}
-          <div ref={messagesEndRef} />
-        </div>
+              );
+            })}
+            {typingStatus && <div className="typing-status">{typingStatus}</div>}
+            <div ref={messagesEndRef} />
+          </div>
 
-        <footer className="chat-input">
-          <input
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              handleTyping();
-              if (e.key === 'Enter') sendMessage();
-            }}
-          />
-          <button onClick={sendMessage}>Send</button>
-        </footer>
-      </main>
-    </div>
+          <footer className="chat-input">
+            <input
+              placeholder="Type a message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                handleTyping();
+                if (e.key === 'Enter') sendMessage();
+              }}
+            />
+            <button onClick={sendMessage}>Send</button>
+          </footer>
+        </main>
+      </div>
+    </>
   );
 }
 
