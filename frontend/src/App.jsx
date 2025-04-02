@@ -5,7 +5,6 @@ import axios from 'axios';
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 function App() {
-  const [step, setStep] = useState('login');
   const [userId, setUserId] = useState(null);
   const [nickname, setNickname] = useState('');
   const [username, setUsername] = useState('');
@@ -13,18 +12,26 @@ function App() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [nicknameInput, setNicknameInput] = useState('');
+  const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
   const [typingStatus, setTypingStatus] = useState('');
+  const [darkMode, setDarkMode] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // Fetch messages once on mount
   useEffect(() => {
     fetchMessages();
-    socket.on('receiveMessage', (msg) => setMessages((prev) => [...prev, msg]));
+
+    socket.on('receiveMessage', (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
     socket.on('userTyping', (data) => {
       if (data.nickname !== nickname) {
         setTypingStatus(`${data.nickname} is typing…`);
         setTimeout(() => setTypingStatus(''), 2000);
       }
     });
+
     return () => {
       socket.off('receiveMessage');
       socket.off('userTyping');
@@ -36,25 +43,49 @@ function App() {
   }, [messages]);
 
   const fetchMessages = async () => {
-    const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/messages`);
-    setMessages(res.data);
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/messages`);
+      setMessages(res.data);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    }
   };
 
   const handleLogin = async () => {
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, { username, password });
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+        username,
+        password,
+      });
+
+      if (!res.data || !res.data.id) {
+        alert('Login failed');
+        return;
+      }
+
       setUserId(res.data.id);
       setNickname(res.data.nickname || '');
-      setStep(res.data.nickname ? 'chat' : 'nickname');
-    } catch {
+
+      if (!res.data.nickname) {
+        setShowNicknamePrompt(true);
+      }
+    } catch (err) {
       alert('Login failed');
     }
   };
 
   const updateNickname = async () => {
-    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/set-nickname`, { id: userId, nickname: nicknameInput });
-    setNickname(nicknameInput);
-    setStep('chat');
+    try {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/set-nickname`, {
+        id: userId,
+        nickname: nicknameInput,
+      });
+
+      setNickname(nicknameInput);
+      setShowNicknamePrompt(false);
+    } catch (err) {
+      alert('Failed to set nickname');
+    }
   };
 
   const sendMessage = () => {
@@ -67,71 +98,106 @@ function App() {
     socket.emit('typing', { nickname });
   };
 
-  const formatTime = (isoDate) => new Date(isoDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTime = (isoDate) => {
+    const date = new Date(isoDate);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
-  const LoginScreen = () => (
-    <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 text-black dark:text-white">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-4">Login</h2>
-        <input className="w-full p-2 mb-3 rounded bg-gray-200 dark:bg-gray-700" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-        <input className="w-full p-2 mb-3 rounded bg-gray-200 dark:bg-gray-700" placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <button onClick={handleLogin} className="w-full bg-blue-600 text-white py-2 rounded">Login</button>
+  const themeClass = darkMode ? 'dark' : '';
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  const AuthCard = ({ title, children }) => (
+    <div className={`min-h-screen ${themeClass} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center px-4`}>
+      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl w-full max-w-sm">
+        <h2 className="text-2xl font-semibold text-center mb-4">{title}</h2>
+        {children}
       </div>
     </div>
   );
 
-  const NicknameScreen = () => (
-    <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 text-black dark:text-white">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-bold mb-4">Set Nickname</h2>
-        <input className="w-full p-2 mb-3 rounded bg-gray-200 dark:bg-gray-700" placeholder="Your nickname" value={nicknameInput} onChange={(e) => setNicknameInput(e.target.value)} />
-        <button onClick={updateNickname} className="w-full bg-green-600 text-white py-2 rounded">Save</button>
-      </div>
-    </div>
-  );
+  // Login screen
+  if (!userId && !showNicknamePrompt) {
+    return (
+      <AuthCard title="Login">
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
+          onClick={handleLogin}
+        >
+          Login
+        </button>
+      </AuthCard>
+    );
+  }
 
-  const ChatDashboard = () => (
-    <div className="h-screen flex text-white">
-      {/* Sidebar */}
-      <div className="w-1/4 bg-gray-900 p-4 space-y-4">
-        <h2 className="text-xl font-bold mb-4">Chats</h2>
-        <div className="space-y-2">
-          {["Luis", "MJ", "Kenji", "Ken"].map((name, idx) => (
-            <div key={idx} className="bg-gray-800 p-3 rounded-lg hover:bg-gray-700 cursor-pointer">
-              <div className="font-medium">{name}</div>
-              <div className="text-xs text-gray-400">Active now</div>
-            </div>
-          ))}
+  // Nickname prompt
+  if (showNicknamePrompt) {
+    return (
+      <AuthCard title="Set Your Nickname">
+        <input
+          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          placeholder="Nickname"
+          value={nicknameInput}
+          onChange={(e) => setNicknameInput(e.target.value)}
+        />
+        <button
+          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded"
+          onClick={updateNickname}
+        >
+          Set Nickname
+        </button>
+      </AuthCard>
+    );
+  }
+
+  // Main chat UI
+  return (
+    <div className={`${themeClass} min-h-screen bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex flex-col items-center justify-center p-4`}>
+      <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl flex flex-col h-[90vh]">
+        <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">💬 Group Chat</h2>
+          <button
+            onClick={toggleDarkMode}
+            className="text-sm text-blue-500 dark:text-blue-300 hover:underline"
+          >
+            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
         </div>
-      </div>
 
-      {/* Main Chat */}
-      <div className="flex-1 bg-gray-800 flex flex-col">
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-bold">{nickname}</h2>
-          <span className="text-sm text-green-400">Online</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-800">
           {messages.map((msg, idx) => {
             const isMine = msg.nickname === nickname;
             return (
               <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-md px-4 py-2 rounded-xl shadow ${isMine ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>
-                  <div className="font-semibold text-sm mb-1">{msg.nickname}</div>
-                  <div className="text-sm">{msg.message}</div>
-                  <div className="text-[10px] text-right mt-1 text-gray-300">{formatTime(msg.createdAt)}</div>
+                <div className={`max-w-sm px-4 py-2 rounded-2xl shadow-md ${isMine ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-sm'}`}>
+                  <div className="text-sm font-semibold mb-1">{msg.nickname}</div>
+                  <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                  <div className="text-[10px] text-right mt-1 opacity-70">{formatTime(msg.createdAt)}</div>
                 </div>
               </div>
             );
           })}
-          {typingStatus && <div className="text-xs italic text-gray-400">{typingStatus}</div>}
+          {typingStatus && (
+            <div className="text-xs text-gray-500 dark:text-gray-300 italic">{typingStatus}</div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex">
+        <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2 bg-white dark:bg-gray-900">
           <input
-            className="flex-grow p-2 rounded-lg bg-gray-700 text-white"
+            className="flex-grow border rounded-xl p-2 text-sm bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
             placeholder="Type a message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -140,15 +206,16 @@ function App() {
               if (e.key === 'Enter') sendMessage();
             }}
           />
-          <button onClick={sendMessage} className="ml-2 bg-blue-500 px-4 py-2 rounded-lg">Send</button>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl"
+            onClick={sendMessage}
+          >
+            Send
+          </button>
         </div>
       </div>
     </div>
   );
-
-  if (step === 'login') return <LoginScreen />;
-  if (step === 'nickname') return <NicknameScreen />;
-  return <ChatDashboard />;
 }
 
 export default App;
