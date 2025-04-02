@@ -127,9 +127,13 @@ body {
   cursor: pointer;
 }
 
-/* Responsive Sidebar (Collapsible) */
+/* Sidebar collapsible toggle */
 .sidebar {
   transition: transform 0.3s ease;
+}
+
+.hamburger-fixed {
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -154,11 +158,19 @@ body {
     justify-content: space-between;
   }
 
-  .hamburger {
-    background: none;
+  .hamburger-fixed {
+    display: block;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    background: #3a5eff;
     color: white;
     font-size: 1.5rem;
     border: none;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    z-index: 999;
     cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
 }
