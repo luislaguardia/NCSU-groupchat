@@ -15,6 +15,7 @@ function App() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [typingStatus, setTypingStatus] = useState('');
+  const [showSidebar, setShowSidebar] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -99,6 +100,8 @@ function App() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const toggleSidebar = () => setShowSidebar(!showSidebar);
+
   if (step === 'login') {
     return (
       <div className="auth-container">
@@ -126,13 +129,16 @@ function App() {
 
   return (
     <div className="chat-wrapper">
-      <aside className="sidebar">
+      <aside className={`sidebar ${showSidebar ? 'visible' : ''}`}>
         <h2>Chats</h2>
         <p>Welcome, <strong>{nickname}</strong></p>
       </aside>
 
       <main className="chat-panel">
-        <header className="chat-header">Group Chat</header>
+        <header className="chat-header">
+          <button className="hamburger" onClick={toggleSidebar}>☰</button>
+          Group Chat
+        </header>
 
         <div className="chat-messages">
           {messages.map((msg, idx) => {
