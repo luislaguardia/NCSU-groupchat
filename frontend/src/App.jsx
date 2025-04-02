@@ -5,21 +5,20 @@ import axios from 'axios';
 const socket = io(import.meta.env.VITE_BACKEND_URL);
 
 function App() {
+  const [step, setStep] = useState('login'); // 'login', 'nickname', 'chat'
   const [userId, setUserId] = useState(null);
   const [nickname, setNickname] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [nicknameInput, setNicknameInput] = useState('');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [nicknameInput, setNicknameInput] = useState('');
-  const [showNicknamePrompt, setShowNicknamePrompt] = useState(false);
   const [typingStatus, setTypingStatus] = useState('');
   const [darkMode, setDarkMode] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // Fetch messages once on mount
   useEffect(() => {
-    fetchMessages();
+    if (step === 'chat') fetchMessages();
 
     socket.on('receiveMessage', (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -36,7 +35,7 @@ function App() {
       socket.off('receiveMessage');
       socket.off('userTyping');
     };
-  }, [nickname]);
+  }, [step, nickname]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,7 +66,9 @@ function App() {
       setNickname(res.data.nickname || '');
 
       if (!res.data.nickname) {
-        setShowNicknamePrompt(true);
+        setStep('nickname');
+      } else {
+        setStep('chat');
       }
     } catch (err) {
       alert('Login failed');
@@ -82,7 +83,7 @@ function App() {
       });
 
       setNickname(nicknameInput);
-      setShowNicknamePrompt(false);
+      setStep('chat');
     } catch (err) {
       alert('Failed to set nickname');
     }
@@ -106,114 +107,75 @@ function App() {
   const themeClass = darkMode ? 'dark' : '';
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
-  const AuthCard = ({ title, children }) => (
-    <div className={`min-h-screen ${themeClass} bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex items-center justify-center px-4`}>
-      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-xl shadow-xl w-full max-w-sm">
-        <h2 className="text-2xl font-semibold text-center mb-4">{title}</h2>
-        {children}
-      </div>
-    </div>
-  );
-
-  // Login screen
-  if (!userId && !showNicknamePrompt) {
-    return (
-      <AuthCard title="Login">
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
-          onClick={handleLogin}
-        >
-          Login
-        </button>
-      </AuthCard>
-    );
-  }
-
-  // Nickname prompt
-  if (showNicknamePrompt) {
-    return (
-      <AuthCard title="Set Your Nickname">
-        <input
-          className="border rounded w-full p-2 mb-3 bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
-          placeholder="Nickname"
-          value={nicknameInput}
-          onChange={(e) => setNicknameInput(e.target.value)}
-        />
-        <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded"
-          onClick={updateNickname}
-        >
-          Set Nickname
-        </button>
-      </AuthCard>
-    );
-  }
-
-  // Main chat UI
   return (
-    <div className={`${themeClass} min-h-screen bg-gradient-to-b from-gray-100 to-gray-300 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white flex flex-col items-center justify-center p-4`}>
-      <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-xl flex flex-col h-[90vh]">
-        <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-blue-600 dark:text-blue-400">💬 Group Chat</h2>
-          <button
-            onClick={toggleDarkMode}
-            className="text-sm text-blue-500 dark:text-blue-300 hover:underline"
-          >
-            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-          </button>
+    <div className={`${themeClass} min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white`}>
+      {step === 'login' && (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow w-full max-w-sm">
+            <h1 className="text-2xl font-bold mb-4 text-center">Login</h1>
+            <input className="w-full mb-3 p-2 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <input className="w-full mb-3 p-2 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <button onClick={handleLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Login</button>
+          </div>
         </div>
+      )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50 dark:bg-gray-800">
-          {messages.map((msg, idx) => {
-            const isMine = msg.nickname === nickname;
-            return (
-              <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-sm px-4 py-2 rounded-2xl shadow-md ${isMine ? 'bg-blue-600 text-white rounded-br-sm' : 'bg-gray-200 dark:bg-gray-700 text-black dark:text-white rounded-bl-sm'}`}>
-                  <div className="text-sm font-semibold mb-1">{msg.nickname}</div>
-                  <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
-                  <div className="text-[10px] text-right mt-1 opacity-70">{formatTime(msg.createdAt)}</div>
-                </div>
-              </div>
-            );
-          })}
-          {typingStatus && (
-            <div className="text-xs text-gray-500 dark:text-gray-300 italic">{typingStatus}</div>
-          )}
-          <div ref={messagesEndRef} />
+      {step === 'nickname' && (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow w-full max-w-sm">
+            <h1 className="text-2xl font-bold mb-4 text-center">Set Your Nickname</h1>
+            <input className="w-full mb-3 p-2 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white" placeholder="Nickname" value={nicknameInput} onChange={(e) => setNicknameInput(e.target.value)} />
+            <button onClick={updateNickname} className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded">Set Nickname</button>
+          </div>
         </div>
+      )}
 
-        <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2 bg-white dark:bg-gray-900">
-          <input
-            className="flex-grow border rounded-xl p-2 text-sm bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              handleTyping();
-              if (e.key === 'Enter') sendMessage();
-            }}
-          />
-          <button
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl"
-            onClick={sendMessage}
-          >
-            Send
-          </button>
+      {step === 'chat' && (
+        <div className="flex h-screen">
+          {/* Sidebar */}
+          <div className="w-1/4 bg-gray-200 dark:bg-gray-800 p-4 space-y-4 hidden md:block">
+            <div className="font-bold text-xl mb-2">Chats</div>
+            <div className="text-sm">Welcome, {nickname}</div>
+            <button onClick={toggleDarkMode} className="text-sm mt-4 text-blue-500">{darkMode ? '☀️ Light' : '🌙 Dark'}</button>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
+            <div className="p-4 border-b border-gray-300 dark:border-gray-700 text-lg font-semibold">Group Chat</div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {messages.map((msg, idx) => {
+                const isMine = msg.nickname === nickname;
+                return (
+                  <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-sm px-4 py-2 rounded-2xl shadow ${isMine ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded-bl-none'}`}>
+                      <div className="text-sm font-semibold">{msg.nickname}</div>
+                      <div className="text-sm">{msg.message}</div>
+                      <div className="text-xs text-right mt-1 opacity-70">{formatTime(msg.createdAt)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {typingStatus && (
+                <div className="text-xs italic text-gray-500">{typingStatus}</div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="p-4 border-t border-gray-300 dark:border-gray-700 flex gap-2">
+              <input
+                className="flex-grow border rounded-xl p-2 bg-gray-100 dark:bg-gray-800 text-black dark:text-white"
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  handleTyping();
+                  if (e.key === 'Enter') sendMessage();
+                }}
+              />
+              <button onClick={sendMessage} className="bg-blue-600 text-white px-4 py-2 rounded-xl">Send</button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
