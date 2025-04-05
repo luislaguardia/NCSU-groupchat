@@ -1,7 +1,14 @@
-groupchat for my special friends
+# GroupChat for My Special Friends
 
-this is a group chat that can see active people, see typing people, send image, and react to a message
+A group chat application designed for my special friends! The chat includes features like seeing active users, viewing who is typing, sending images, and reacting to messages.
 
-new features to be implemented if i have a time again.. 
+## Features:
+- **Active User List**: See who is currently online.
+- **Typing Indicator**: View who is typing a message in real-time.
+- **Image Sharing**: Send images to the chat.
+- **Message Reactions**: React to messages with emojis.
 
-xoxo awit
+## Future Features:
+- Additional features may be implemented when I have time.
+
+**xoxo, awit**
