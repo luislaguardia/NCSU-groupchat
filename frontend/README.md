@@ -1,2 +1,1 @@
-ncsu.vercel.app
-
+website: ncsu.vercel.app
